@@ -1,17 +1,15 @@
-﻿using System;
-using System.Globalization;
-using TollFeeCalculator;
+﻿namespace TollService.Domain;
 
 public class TollCalculator
 {
 
     /**
-     * Calculate the total toll fee for one day
-     *
-     * @param vehicle - the vehicle
-     * @param dates   - date and time of all passes on one day
-     * @return - the total toll fee for that day
-     */
+ * Calculate the total toll fee for one day
+ *
+ * @param vehicle - the vehicle
+ * @param dates   - date and time of all passes on one day
+ * @return - the total toll fee for that day
+ */
 
     public int GetTollFee(Vehicle vehicle, DateTime[] dates)
     {
