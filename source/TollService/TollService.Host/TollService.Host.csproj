@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -7,7 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+	  <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0-rc.1.25451.107" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TollService.Domain\TollService.Domain.csproj" />
+    <ProjectReference Include="..\TollService.Infrastructure.Database\TollService.Infrastructure.Database.csproj" />
+    <ProjectReference Include="..\TollService.Messages\TollService.Messages.csproj" />
   </ItemGroup>
 
 </Project>

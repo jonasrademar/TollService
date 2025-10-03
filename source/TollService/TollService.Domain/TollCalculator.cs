@@ -1,6 +1,11 @@
 ﻿namespace TollService.Domain;
 
-public class TollCalculator
+public interface ITollCalculator
+{
+    int GetTollFee(Vehicle? vehicle, DateTime[] dates);
+}
+
+public class TollCalculator : ITollCalculator
 {
 
     /**

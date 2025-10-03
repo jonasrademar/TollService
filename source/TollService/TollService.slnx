@@ -4,6 +4,8 @@
   </Folder>
   <Project Path="TollService.Domain.UnitTests/TollService.Domain.UnitTests.csproj" />
   <Project Path="TollService.Domain/TollService.Domain.csproj" />
+  <Project Path="TollService.Host.IntegrationTests/TollService.Host.IntegrationTests.csproj" Id="a721d03b-9e1b-4971-a959-eae13c882bdd" />
   <Project Path="TollService.Host/TollService.Host.csproj" />
   <Project Path="TollService.Infrastructure.Database/TollService.Infrastructure.Database.csproj" Id="2022ed1d-153b-42d4-b69b-4653b586f3b5" />
+  <Project Path="TollService.Messages/TollService.Messages.csproj" Id="a6cfa337-21da-4a8a-942e-768464f51f2e" />
 </Solution>
