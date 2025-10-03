@@ -15,7 +15,7 @@ public class TollCalculatorTests : TestHelper.UnitTests
      InlineData(18, "2013-01-02 07:30")]
     public void GetTollFee_TollableVehicle_SinglePass_ReturnsExpectedToll(int expectedToll, DateTime dateTime)
     {
-        var result = subject.GetTollFee(dateTime, TollableVehicle);
+        var result = subject.GetTollFee(dateTime, TollableVehicle());
         result.ShouldBe(expectedToll);
     }
 
@@ -33,7 +33,7 @@ public class TollCalculatorTests : TestHelper.UnitTests
             .Select(s => DateTime.ParseExact(s, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
             .ToArray();
 
-        var result = subject.GetTollFee(TollableVehicle, parsedDates);
+        var result = subject.GetTollFee(TollableVehicle(), parsedDates);
         result.ShouldBe(expectedToll);
     }
 
@@ -42,7 +42,7 @@ public class TollCalculatorTests : TestHelper.UnitTests
     {
         var tollableDate = TollableDateTime();
 
-        var result = subject.GetTollFee(TollFreeVehicle, [tollableDate]);
+        var result = subject.GetTollFee(TollFreeVehicle(), [tollableDate]);
         result.ShouldBe(0);
     }
 
@@ -60,16 +60,32 @@ public class TollCalculatorTests : TestHelper.UnitTests
     {
         var tollableDate = TollFreeDateTime();
 
-        var result = subject.GetTollFee(TollableVehicle, [tollableDate]);
+        var result = subject.GetTollFee(TollableVehicle(), [tollableDate]);
         result.ShouldBe(0);
     }
 
     // Osv. Vanligtvis mer komplett testtäckning men lite för hårdkodat för att orka i kodlabben 😵
     // Föreställ er att det finns massa fler goa tester här.
 
-    private Vehicle TollableVehicle => Fixture.Create<Car>();
-    private Vehicle TollFreeVehicle => Fixture.Create<Motorbike>();
-    
+    private Vehicle TollableVehicle()
+    {
+        return Fixture.Build<Vehicle>()
+            .With(v => v.VehicleType, Fixture.Build<VehicleType>().With(c => c.Tollable, true).Create())
+            .With(v => v.VehicleClassification,
+                Fixture.Build<VehicleClassification>().With(c => c.Tollable, true).Create())
+            .Create();
+    }
+    private Vehicle TollFreeVehicle()
+    {
+        var tollableSwitch = Fixture.Create<int>() % 3;
+        return Fixture.Build<Vehicle>()
+            .With(v => v.VehicleType, Fixture.Build<VehicleType>()
+                .With(c => c.Tollable, tollableSwitch is not (0 or 2)).Create())
+            .With(v => v.VehicleClassification, Fixture.Build<VehicleClassification>()
+                .With(c => c.Tollable, tollableSwitch is not (0 or 1)).Create())
+            .Create();
+    }
+
     private DateTime TollableDateTime() => new DateTime(2013, 01, 02, 06, 30, 00);
     private DateTime TollFreeDateTime() => new DateTime(2013, 01, 01, 12, 00, 00);
 }

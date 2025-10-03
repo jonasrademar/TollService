@@ -5,4 +5,5 @@
   <Project Path="TollService.Domain.UnitTests/TollService.Domain.UnitTests.csproj" />
   <Project Path="TollService.Domain/TollService.Domain.csproj" />
   <Project Path="TollService.Host/TollService.Host.csproj" />
+  <Project Path="TollService.Infrastructure.Database/TollService.Infrastructure.Database.csproj" Id="2022ed1d-153b-42d4-b69b-4653b586f3b5" />
 </Solution>
