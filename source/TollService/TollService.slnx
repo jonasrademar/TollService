@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Common/">
+    <Project Path="TollService.TestHelper/TollService.TestHelper.csproj" />
+  </Folder>
+  <Project Path="TollService.Domain.UnitTests/TollService.Domain.UnitTests.csproj" />
+  <Project Path="TollService.Domain/TollService.Domain.csproj" />
+  <Project Path="TollService.Host/TollService.Host.csproj" />
+</Solution>
