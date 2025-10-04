@@ -1,9 +1,6 @@
 ﻿using AutoFixture;
-using MassTransit;
 using RichardSzalay.MockHttp;
 using Shouldly;
-using System.Threading;
-using TollService.Domain;
 using TollService.Infrastructure.Vehicle.Contracts;
 using TollService.Messages;
 using TollService.TestHelper;
@@ -40,6 +37,41 @@ public class TollTests : IntegrationTest
         response.Message.Toll.ShouldBe(18);
     }
 
+
+    [Fact]
+    public async Task GetTollRequest_PassesOnDifferentDays_CorrectTollPerDay()
+    {
+        var vehicleId = Guid.NewGuid();
+        var vehiclePassRequest1 = Fixture.Build<VehiclePassRegistrationMessage>()
+            .With(m => m.VehicleId, vehicleId)
+            .With(m => m.Timestamp, new DateTime(2013, 01, 02, 07, 30, 0))
+            .Create();
+        await Publish(vehiclePassRequest1);
+
+        var vehiclePassRequest2 = Fixture.Build<VehiclePassRegistrationMessage>()
+            .With(m => m.VehicleId, vehicleId)
+            .With(m => m.Timestamp, new DateTime(2013, 01, 02, 08, 30, 0))
+            .Create();
+        await Publish(vehiclePassRequest2);
+
+        var request1 = Fixture.Build<GetTollRequest>()
+            .With(t => t.VehicleId, vehicleId)
+            .With(t => t.Date, DateOnly.FromDateTime(vehiclePassRequest1.Timestamp))
+            .Create();
+        var request2 = Fixture.Build<GetTollRequest>()
+            .With(t => t.VehicleId, vehicleId)
+            .With(t => t.Date, DateOnly.FromDateTime(vehiclePassRequest2.Timestamp))
+            .Create();
+
+        Http.When(HttpMethod.Get, $"http://vehicleservice/vehicle/{vehicleId}")
+            .RespondWithJson(TollableVehicle());
+
+        var response1 = await BusTestHarness.GetRequestClient<GetTollRequest>().GetResponse<GetTollResponse>(request1, CancellationToken);
+        response1.Message.Toll.ShouldBe(18);
+
+        var response2 = await BusTestHarness.GetRequestClient<GetTollRequest>().GetResponse<GetTollResponse>(request2, CancellationToken);
+        response2.Message.Toll.ShouldBe(8);
+    }
 
     [Fact]
     public async Task GetTollRequest_NoVehiclePasses_PublishesTollResponse()
