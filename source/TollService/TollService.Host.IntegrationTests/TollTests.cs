@@ -1,8 +1,9 @@
 ﻿using AutoFixture;
 using MassTransit;
+using RichardSzalay.MockHttp;
 using Shouldly;
 using System.Threading;
-using RichardSzalay.MockHttp;
+using TollService.Domain;
 using TollService.Infrastructure.Vehicle.Contracts;
 using TollService.Messages;
 using TollService.TestHelper;
@@ -30,7 +31,7 @@ public class TollTests : IntegrationTest
             .With(t => t.Date, DateOnly.FromDateTime(vehiclePassRequest.Timestamp))
             .Create();
 
-        Http.When(HttpMethod.Get, "http://vehicleservice/vehicle")
+        Http.When(HttpMethod.Get, $"http://vehicleservice/vehicle/{vehiclePassRequest.VehicleId}")
             .RespondWithJson(TollableVehicle());
 
         var response = await BusTestHarness.GetRequestClient<GetTollRequest>()
@@ -38,6 +39,7 @@ public class TollTests : IntegrationTest
 
         response.Message.Toll.ShouldBe(18);
     }
+
 
     [Fact]
     public async Task GetTollRequest_NoVehiclePasses_PublishesTollResponse()

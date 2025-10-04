@@ -12,6 +12,7 @@ builder.Services.AddDbContext<TollServiceDbContext>(ctx =>
 
 builder.Services.AddTransient<ITollCalculator, TollCalculator>();
 builder.Services.AddTransient<IVehiclePassRepository, VehiclePassRepository>();
+builder.Services.AddTransient<IIVehicleProvider, VehicleProvider>();
 
 builder.Services.AddHttpClient<IVehicleServiceProxy, VehicleServiceProxy>(client =>
     client.BaseAddress = new Uri(builder.Configuration.GetConnectionString("VehicleProxy")!));

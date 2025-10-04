@@ -1,14 +1,14 @@
 ﻿using AutoFixture;
 using Shouldly;
 using System.Globalization;
-using System.Linq;
-using TollService.Infrastructure.Vehicle.Contracts;
+using Moq;
 
 namespace TollService.Domain.UnitTests;
 
 public class TollCalculatorTests : TestHelper.UnitTests
 {
-    private readonly TollCalculator subject = new();
+    private static readonly Mock<IVehiclePassRepository> VehiclePassRepository = new();
+    private readonly TollCalculator subject = new(VehiclePassRepository.Object);
 
     [Theory, 
      InlineData(8, "2013-01-02 06:00"), 
@@ -68,26 +68,14 @@ public class TollCalculatorTests : TestHelper.UnitTests
     // Osv. Vanligtvis mer komplett testtäckning men lite för hårdkodat för att orka i kodlabben 😵
     // Föreställ er att det finns massa fler goa tester här.
 
-    private Vehicle TollableVehicle()
-    {
-        return Fixture.Build<Vehicle>()
-            .With(v => v.VehicleType, Fixture.Build<VehicleType>().With(c => c.Tollable, true).Create())
-            .With(v => v.VehicleClassifications,
-                [Fixture.Build<VehicleClassification>().With(c => c.Tollable, true).Create()])
+    private Vehicle TollableVehicle() =>
+        Fixture.Build<Vehicle>()
+            .With(v => v.Tollable, true)
             .Create();
-    }
-    private Vehicle TollFreeVehicle()
-    {
-        var tollableSwitch = Fixture.Create<int>() % 3;
-        return Fixture.Build<Vehicle>()
-            .With(v => v.VehicleType, Fixture.Build<VehicleType>()
-                .With(c => c.Tollable, tollableSwitch is not (0 or 2)).Create())
-            .With(v => v.VehicleClassifications, [
-                Fixture.Build<VehicleClassification>()
-                    .With(c => c.Tollable, tollableSwitch is not (0 or 1)).Create()
-            ])
+    private Vehicle TollFreeVehicle() => 
+        Fixture.Build<Vehicle>()
+            .With(v => v.Tollable, false)
             .Create();
-    }
 
     private DateTime TollableDateTime() => new DateTime(2013, 01, 02, 06, 30, 00);
     private DateTime TollFreeDateTime() => new DateTime(2013, 01, 01, 12, 00, 00);

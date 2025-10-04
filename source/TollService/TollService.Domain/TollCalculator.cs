@@ -1,24 +1,34 @@
-﻿using TollService.Infrastructure.Vehicle.Contracts;
+﻿using System.Collections.Immutable;
 
 namespace TollService.Domain;
 
 public interface ITollCalculator
 {
-    int GetTollFee(Vehicle? vehicle, IReadOnlyList<DateTime> dates);
+    Task<int> GetTollFeeAsync(Vehicle vehicle, DateOnly date);
 }
 
-public class TollCalculator : ITollCalculator
+public class TollCalculator(IVehiclePassRepository vehiclePassRepository) : ITollCalculator
 {
-
     /**
  * Calculate the total toll fee for one day
  *
  * @param vehicle - the vehicle
- * @param dates   - date and time of all passes on one day
+ * @param date    - the date to calculate toll for
  * @return - the total toll fee for that day
  */
 
-    public int GetTollFee(Vehicle? vehicle, IReadOnlyList<DateTime> dates)
+    public async Task<int> GetTollFeeAsync(Vehicle vehicle, DateOnly date)
+    {
+        if (!vehicle.Tollable)
+            return 0;
+
+        var vehiclePasses = await vehiclePassRepository.GetPasses(vehicle.VehicleId, date);
+        var dates = vehiclePasses.Select(p => p.Timestamp).ToImmutableList();
+        
+        return GetTollFee(vehicle, dates);
+    }
+
+    public int GetTollFee(Vehicle vehicle, IReadOnlyList<DateTime> dates)
     {
         DateTime intervalStart = dates[0];
         int totalFee = 0;
@@ -45,9 +55,9 @@ public class TollCalculator : ITollCalculator
         return totalFee;
     }
 
-    public int GetTollFee(DateTime date, Vehicle? vehicle)
+    public int GetTollFee(DateTime date, Vehicle vehicle)
     {
-        if (IsTollFreeDate(date) || !(vehicle?.IsTollable ?? true)) return 0;
+        if (IsTollFreeDate(date)) return 0;
 
         int hour = date.Hour;
         int minute = date.Minute;

@@ -10,7 +10,7 @@ public class VehicleServiceProxy(HttpClient httpClient) : IVehicleServiceProxy
 {
     public async Task<Contracts.Vehicle?> GetVehicle(Guid id)
     {
-        var result = await httpClient.GetAsync("vehicle");
+        var result = await httpClient.GetAsync($"vehicle/{id}");
         return await result.Content.ReadFromJsonAsync<Contracts.Vehicle>();
     }
 }
