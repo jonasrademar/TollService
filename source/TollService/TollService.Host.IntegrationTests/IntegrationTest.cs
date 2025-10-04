@@ -5,11 +5,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Http;
+using RichardSzalay.MockHttp;
 
 namespace TollService.Host.IntegrationTests;
 
 public class IntegrationTest : WebApplicationFactory<Program>
 {
+    protected MockHttpMessageHandler Http { get; } = new(BackendDefinitionBehavior.Always);
     public IFixture Fixture { get; set; } = new Fixture();
     protected ITestHarness BusTestHarness => Services.GetRequiredService<ITestHarness>();
 
@@ -18,6 +21,8 @@ public class IntegrationTest : WebApplicationFactory<Program>
         builder.ConfigureTestServices(svc =>
         {
             svc.AddMassTransitTestHarness();
+            svc.ConfigureAll<HttpClientFactoryOptions>(
+                opt => opt.HttpMessageHandlerBuilderActions.Add(ba => ba.PrimaryHandler = Http));
         });
     }
 }

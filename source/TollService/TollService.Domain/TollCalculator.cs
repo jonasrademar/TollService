@@ -4,7 +4,7 @@ namespace TollService.Domain;
 
 public interface ITollCalculator
 {
-    int GetTollFee(Vehicle? vehicle, IReadOnlyList<DateTimeOffset> dates);
+    int GetTollFee(Vehicle? vehicle, IReadOnlyList<DateTime> dates);
 }
 
 public class TollCalculator : ITollCalculator
@@ -18,11 +18,11 @@ public class TollCalculator : ITollCalculator
  * @return - the total toll fee for that day
  */
 
-    public int GetTollFee(Vehicle? vehicle, IReadOnlyList<DateTimeOffset> dates)
+    public int GetTollFee(Vehicle? vehicle, IReadOnlyList<DateTime> dates)
     {
-        DateTimeOffset intervalStart = dates[0];
+        DateTime intervalStart = dates[0];
         int totalFee = 0;
-        foreach (DateTimeOffset date in dates)
+        foreach (DateTime date in dates)
         {
             int nextFee = GetTollFee(date, vehicle);
             int tempFee = GetTollFee(intervalStart, vehicle);
@@ -45,7 +45,7 @@ public class TollCalculator : ITollCalculator
         return totalFee;
     }
 
-    public int GetTollFee(DateTimeOffset date, Vehicle? vehicle)
+    public int GetTollFee(DateTime date, Vehicle? vehicle)
     {
         if (IsTollFreeDate(date) || !(vehicle?.IsTollable ?? true)) return 0;
 
@@ -64,7 +64,7 @@ public class TollCalculator : ITollCalculator
         else return 0;
     }
 
-    private Boolean IsTollFreeDate(DateTimeOffset date)
+    private Boolean IsTollFreeDate(DateTime date)
     {
         int year = date.Year;
         int month = date.Month;
