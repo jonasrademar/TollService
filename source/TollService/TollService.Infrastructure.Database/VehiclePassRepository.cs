@@ -12,6 +12,9 @@ public class VehiclePassRepository(TollServiceDbContext dbContext) : IVehiclePas
                 p.Timestamp >= date.ToDateTime(TimeOnly.MinValue))
             .ToListAsync();
 
-    public void AddVehiclePass(Guid passId, Guid vehicleId, DateTime timestamp)
-        => dbContext.VehiclePasses.Add(new VehiclePass(passId, vehicleId, timestamp));
+    public async Task AddVehiclePass(Guid passId, Guid vehicleId, DateTime timestamp)
+    {
+        dbContext.VehiclePasses.Add(new VehiclePass(passId, vehicleId, timestamp));
+        await dbContext.SaveChangesAsync();
+    }
 }

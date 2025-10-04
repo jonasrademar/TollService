@@ -3,7 +3,7 @@
 public interface IVehiclePassRepository
 {
     Task<IEnumerable<VehiclePass>> GetPasses(Guid vehicleId, DateOnly date);
-    void AddVehiclePass(Guid passId, Guid vehicleId, DateTime timestamp);
+    Task AddVehiclePass(Guid passId, Guid vehicleId, DateTime timestamp);
 }
 
 public class VehiclePass(Guid passId, Guid vehicleId, DateTime timestamp)

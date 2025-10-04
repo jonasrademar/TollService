@@ -4,7 +4,6 @@ using TollService.Domain;
 using TollService.Host.Consumers;
 using TollService.Infrastructure.Database;
 using TollService.Infrastructure.Vehicle;
-using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 

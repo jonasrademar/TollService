@@ -1,23 +1,15 @@
 ﻿namespace TollService.Infrastructure.Vehicle.Contracts;
 
-public sealed class Vehicle
+public record Vehicle(
+    Guid Id,
+    VehicleType VehicleType,
+    IEnumerable<VehicleClassification> VehicleClassifications)
 {
-    public Guid Id { get; set; }
-    public VehicleType VehicleType { get; set; } = null!;
-    public VehicleClassification VehicleClassification { get; set; } = null!;
-    public bool IsTollable => VehicleType.Tollable && VehicleClassification.Tollable;
+    public bool IsTollable => VehicleType.Tollable && VehicleClassifications.Any(c => c.Tollable);
 }
 
-public class VehicleType
-{
-    public Guid Id { get; set; }
-    public required string Description { get; set; }
-    public bool Tollable { get; set; }
-}
+// Här tänker jag tex "Motorbike", "Tractor" osv
+public record VehicleType(Guid Id, string Description, bool Tollable);
 
-public class VehicleClassification
-{
-    public Guid Id { get; set; }
-    public required string Description { get; set; }
-    public bool Tollable { get; set; }
-}
+// Här tänker jag tex "Diplomat", "Foreign", "Military" osv
+public record VehicleClassification(Guid Id, string Description, bool Tollable); 

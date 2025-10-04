@@ -72,8 +72,8 @@ public class TollCalculatorTests : TestHelper.UnitTests
     {
         return Fixture.Build<Vehicle>()
             .With(v => v.VehicleType, Fixture.Build<VehicleType>().With(c => c.Tollable, true).Create())
-            .With(v => v.VehicleClassification,
-                Fixture.Build<VehicleClassification>().With(c => c.Tollable, true).Create())
+            .With(v => v.VehicleClassifications,
+                [Fixture.Build<VehicleClassification>().With(c => c.Tollable, true).Create()])
             .Create();
     }
     private Vehicle TollFreeVehicle()
@@ -82,8 +82,10 @@ public class TollCalculatorTests : TestHelper.UnitTests
         return Fixture.Build<Vehicle>()
             .With(v => v.VehicleType, Fixture.Build<VehicleType>()
                 .With(c => c.Tollable, tollableSwitch is not (0 or 2)).Create())
-            .With(v => v.VehicleClassification, Fixture.Build<VehicleClassification>()
-                .With(c => c.Tollable, tollableSwitch is not (0 or 1)).Create())
+            .With(v => v.VehicleClassifications, [
+                Fixture.Build<VehicleClassification>()
+                    .With(c => c.Tollable, tollableSwitch is not (0 or 1)).Create()
+            ])
             .Create();
     }
 
