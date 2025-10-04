@@ -61,20 +61,36 @@ public class TollCalculator(
     {
         if (await IsTollFreeDate(date)) return 0;
 
-        int hour = date.Hour;
-        int minute = date.Minute;
-
-        if (hour == 6 && minute >= 0 && minute <= 29) return 8;
-        else if (hour == 6 && minute >= 30 && minute <= 59) return 13;
-        else if (hour == 7 && minute >= 0 && minute <= 59) return 18;
-        else if (hour == 8 && minute >= 0 && minute <= 29) return 13;
-        else if (hour >= 8 && hour <= 14 && minute >= 30 && minute <= 59) return 8;
-        else if (hour == 15 && minute >= 0 && minute <= 29) return 13;
-        else if (hour == 15 && minute >= 0 || hour == 16 && minute <= 59) return 18;
-        else if (hour == 17 && minute >= 0 && minute <= 59) return 13;
-        else if (hour == 18 && minute >= 0 && minute <= 29) return 8;
-        else return 0;
+        var timeOfDay = TimeOnly.FromDateTime(date);
+        
+        return GetTollFeeForTime(timeOfDay);
     }
+
+    private static int GetTollFeeForTime(TimeOnly time)
+    {
+        // Det här borde egentligen också ligga i en service och gå att underhålla, snarare än hårdkodat.
+        var tollIntervals = new[]
+        {
+            new TollInterval(new TimeOnly(06, 00), 8),
+            new TollInterval(new TimeOnly(06, 30), 13),
+            new TollInterval(new TimeOnly(07, 00), 18),
+            new TollInterval(new TimeOnly(08, 00), 13),
+            new TollInterval(new TimeOnly(08, 30), 8),
+            new TollInterval(new TimeOnly(15, 00), 13),
+            new TollInterval(new TimeOnly(15, 30), 18),
+            new TollInterval(new TimeOnly(17, 00), 13),
+            new TollInterval(new TimeOnly(18, 00), 8),
+            new TollInterval(new TimeOnly(18, 30), 0)
+        };
+
+        var matchingInterval = tollIntervals
+            .OrderBy(x => x.StartTime)
+            .LastOrDefault(x => time >= x.StartTime);
+            
+        return matchingInterval?.Fee ?? 0;
+    }
+
+    private record TollInterval(TimeOnly StartTime, int Fee);
 
     private async Task<bool> IsTollFreeDate(DateTime date)
     {

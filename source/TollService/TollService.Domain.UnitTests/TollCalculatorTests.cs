@@ -58,11 +58,14 @@ public class TollCalculatorTests : TestHelper.UnitTests
     }
 
     [Fact]
-    public async Task GetTollFee_TollFreeDateTime_ReturnsZero()
+    public async Task GetTollFee_Holiday_ReturnsZero()
     {
-        var tollableDate = TollFreeDateTime();
+        var dateWithTollableTimeSlot = TollableDateTime();
 
-        var result = await subject.GetTollFee(TollableVehicle(), [tollableDate]);
+        HolidayProvider.Setup(p => p.GetHolidays(dateWithTollableTimeSlot.Year))
+            .ReturnsAsync([DateOnly.FromDateTime(dateWithTollableTimeSlot)]);
+
+        var result = await subject.GetTollFee(TollableVehicle(), [dateWithTollableTimeSlot]);
         result.ShouldBe(0);
     }
 
@@ -78,6 +81,11 @@ public class TollCalculatorTests : TestHelper.UnitTests
             .With(v => v.Tollable, false)
             .Create();
 
-    private DateTime TollableDateTime() => new DateTime(2013, 01, 02, 06, 30, 00);
-    private DateTime TollFreeDateTime() => new DateTime(2013, 01, 01, 12, 00, 00);
+    private DateTime TollableDateTime()
+    {
+        var tollableDateTime = Fixture.Create<DateTime>().Date;
+        tollableDateTime = tollableDateTime.AddHours(6 + (Fixture.Create<int>() % 12));
+
+        return tollableDateTime;
+    }
 }
