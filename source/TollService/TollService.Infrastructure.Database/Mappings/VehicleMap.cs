@@ -4,34 +4,15 @@ using TollService.Domain;
 
 namespace TollService.Infrastructure.Database.Mappings;
 
-public class VehicleMap : IEntityTypeConfiguration<Vehicle>
-{
-    public void Configure(EntityTypeBuilder<Vehicle> builder)
-    {
-        builder.HasKey(p => p.Id);
-        builder.HasOne(p => p.VehicleClassification).WithMany();
-        builder.HasOne(p => p.VehicleType).WithMany();
-    }
-}
 
-public class VehicleTypeMap : IEntityTypeConfiguration<VehicleType>
+public class VehiclePassMap : IEntityTypeConfiguration<VehiclePass>
 {
-    public void Configure(EntityTypeBuilder<VehicleType> builder)
+    public void Configure(EntityTypeBuilder<VehiclePass> builder)
     {
-        builder.HasKey(p => p.Id);
-        builder.Property(p => p.Id).ValueGeneratedOnAdd();
-        builder.Property(p => p.Description).HasMaxLength(32);
-        builder.Property(p => p.Tollable).IsRequired();
-    }
-}
-
-public class VehicleClassificationMap : IEntityTypeConfiguration<VehicleClassification>
-{
-    public void Configure(EntityTypeBuilder<VehicleClassification> builder)
-    {
-        builder.HasKey(p => p.Id);
-        builder.Property(p => p.Id).ValueGeneratedOnAdd();
-        builder.Property(p => p.Description).HasMaxLength(32);
-        builder.Property(p => p.Tollable).IsRequired();
+        builder.HasKey(p => p.PassId);
+        builder.Property(p => p.PassId).ValueGeneratedNever();
+        builder.Property(p => p.VehicleId);
+        builder.Property(p => p.Timestamp);
+        builder.Property(p => p.CreatedAt);
     }
 }

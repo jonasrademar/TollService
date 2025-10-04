@@ -2,6 +2,7 @@
 using Shouldly;
 using System.Globalization;
 using System.Linq;
+using TollService.Infrastructure.Vehicle.Contracts;
 
 namespace TollService.Domain.UnitTests;
 
@@ -30,8 +31,8 @@ public class TollCalculatorTests : TestHelper.UnitTests
     public void GetTollFee_TollableVehicle_MultiplePasses_ReturnsExpectedToll(int expectedToll, string[] dateTimes)
     {
         var parsedDates = dateTimes
-            .Select(s => DateTime.ParseExact(s, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
-            .ToArray();
+            .Select(s => DateTimeOffset.ParseExact(s, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
+            .ToList();
 
         var result = subject.GetTollFee(TollableVehicle(), parsedDates);
         result.ShouldBe(expectedToll);

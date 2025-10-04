@@ -1,4 +1,4 @@
-﻿namespace TollService.Domain;
+﻿namespace TollService.Infrastructure.Vehicle.Contracts;
 
 public sealed class Vehicle
 {

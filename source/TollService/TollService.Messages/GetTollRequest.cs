@@ -1,5 +1,5 @@
 ﻿namespace TollService.Messages;
 
-public record GetTollRequest(Guid VehicleId, DateTime[] Dates);
+public record GetTollRequest(Guid VehicleId, DateOnly Date);
 
 public record GetTollResponse(int Toll);

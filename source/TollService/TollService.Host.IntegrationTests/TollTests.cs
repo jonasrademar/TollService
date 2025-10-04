@@ -1,12 +1,18 @@
 ﻿using AutoFixture;
-using System.Threading;
+using MassTransit;
 using Shouldly;
+using System.Threading;
 using TollService.Messages;
 
 namespace TollService.Host.IntegrationTests;
 
 public class TollTests : IntegrationTest
 {
+    public TollTests()
+    {
+        Fixture.Register(() => DateOnly.FromDateTime(Fixture.Create<DateTime>()));
+    }
+
     [Fact]
     public async Task GetTollRequest_PublishesTollResponse()
     {

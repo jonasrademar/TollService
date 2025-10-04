@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using TollService.Domain;
 using TollService.Host.Consumers;
 using TollService.Infrastructure.Database;
+using TollService.Infrastructure.Vehicle;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +12,10 @@ builder.Services.AddDbContext<TollServiceDbContext>(ctx =>
     ctx.UseInMemoryDatabase($"tollservice_{Guid.NewGuid().ToByteArray()}"));
 
 builder.Services.AddTransient<ITollCalculator, TollCalculator>();
-builder.Services.AddTransient<IVehicleRepository, VehicleRepository>();
+builder.Services.AddTransient<IVehiclePassRepository, VehiclePassRepository>();
+
+builder.Services.AddHttpClient<IVehicleServiceProxy, VehicleServiceProxy>(client =>
+    client.BaseAddress = new Uri(builder.Configuration.GetConnectionString("VehicleProxy")!));
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
