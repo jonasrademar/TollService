@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using TollService.Domain;
 using TollService.Host.Consumers;
 using TollService.Infrastructure.Database;
+using TollService.Infrastructure.Holiday;
 using TollService.Infrastructure.Vehicle;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,12 +11,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<TollServiceDbContext>(ctx => 
     ctx.UseInMemoryDatabase($"tollservice_{Guid.NewGuid().ToByteArray()}"));
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddTransient<ITollCalculator, TollCalculator>();
 builder.Services.AddTransient<IVehiclePassRepository, VehiclePassRepository>();
 builder.Services.AddTransient<IIVehicleProvider, VehicleProvider>();
+builder.Services.AddSingleton<IHolidayProvider, HolidayProvider>();
 
 builder.Services.AddHttpClient<IVehicleServiceProxy, VehicleServiceProxy>(client =>
-    client.BaseAddress = new Uri(builder.Configuration.GetConnectionString("VehicleProxy")!));
+    client.BaseAddress = new Uri(builder.Configuration.GetConnectionString("VehicleService")!));
+builder.Services.AddHttpClient<IHolidayServiceProxy, HolidayServiceProxy>(client =>
+    client.BaseAddress = new Uri(builder.Configuration.GetConnectionString("HolidayService")!));
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

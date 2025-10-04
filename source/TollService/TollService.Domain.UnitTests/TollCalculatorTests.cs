@@ -7,16 +7,17 @@ namespace TollService.Domain.UnitTests;
 
 public class TollCalculatorTests : TestHelper.UnitTests
 {
+    private static readonly Mock<IHolidayProvider> HolidayProvider = new();
     private static readonly Mock<IVehiclePassRepository> VehiclePassRepository = new();
-    private readonly TollCalculator subject = new(VehiclePassRepository.Object);
+    private readonly TollCalculator subject = new(HolidayProvider.Object, VehiclePassRepository.Object);
 
     [Theory, 
      InlineData(8, "2013-01-02 06:00"), 
      InlineData(13, "2013-01-02 06:45"), 
      InlineData(18, "2013-01-02 07:30")]
-    public void GetTollFee_TollableVehicle_SinglePass_ReturnsExpectedToll(int expectedToll, DateTime dateTime)
+    public async Task GetTollFee_TollableVehicle_SinglePass_ReturnsExpectedToll(int expectedToll, DateTime dateTime)
     {
-        var result = subject.GetTollFee(dateTime, TollableVehicle());
+        var result = await subject.GetTollFee(dateTime, TollableVehicle());
         result.ShouldBe(expectedToll);
     }
 
@@ -28,40 +29,40 @@ public class TollCalculatorTests : TestHelper.UnitTests
      InlineData(36, new[] { "2013-01-02 07:30", "2013-01-02 16:30" }),
      InlineData(39, new[] { "2013-01-02 06:00", "2013-01-02 07:15", "2013-01-02 08:20" }),
      InlineData(60, new[] { "2013-01-02 06:35", "2013-01-02 07:40", "2013-01-02 15:10", "2013-01-02 16:15" })]
-    public void GetTollFee_TollableVehicle_MultiplePasses_ReturnsExpectedToll(int expectedToll, string[] dateTimes)
+    public async Task GetTollFee_TollableVehicle_MultiplePasses_ReturnsExpectedToll(int expectedToll, string[] dateTimes)
     {
         var parsedDates = dateTimes
             .Select(s => DateTime.ParseExact(s, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
             .ToList();
 
-        var result = subject.GetTollFee(TollableVehicle(), parsedDates);
+        var result = await subject.GetTollFee(TollableVehicle(), parsedDates);
         result.ShouldBe(expectedToll);
     }
 
     [Fact]
-    public void GetTollFee_TollFreeVehicle_ReturnsZero()
+    public async Task GetTollFee_TollFreeVehicle_ReturnsZero()
     {
         var tollableDate = TollableDateTime();
 
-        var result = subject.GetTollFee(TollFreeVehicle(), [tollableDate]);
+        var result = await subject.GetTollFee(TollFreeVehicle(), [tollableDate]);
         result.ShouldBe(0);
     }
 
     [Fact]
-    public void GetTollFee_NullVehicle_Tollable()
+    public async Task GetTollFee_NullVehicle_Tollable()
     {
         var tollableDate = TollableDateTime();
 
-        var result = subject.GetTollFee(null!, [tollableDate]);
+        var result = await subject.GetTollFee(null!, [tollableDate]);
         result.ShouldBeGreaterThan(0);
     }
 
     [Fact]
-    public void GetTollFee_TollFreeDateTime_ReturnsZero()
+    public async Task GetTollFee_TollFreeDateTime_ReturnsZero()
     {
         var tollableDate = TollFreeDateTime();
 
-        var result = subject.GetTollFee(TollableVehicle(), [tollableDate]);
+        var result = await subject.GetTollFee(TollableVehicle(), [tollableDate]);
         result.ShouldBe(0);
     }
 

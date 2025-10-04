@@ -1,6 +1,7 @@
 ﻿using AutoFixture;
 using RichardSzalay.MockHttp;
 using Shouldly;
+using TollService.Infrastructure.Holiday.Contracts;
 using TollService.Infrastructure.Vehicle.Contracts;
 using TollService.Messages;
 using TollService.TestHelper;
@@ -20,6 +21,7 @@ public class TollTests : IntegrationTest
         var vehiclePassRequest = Fixture.Build<VehiclePassRegistrationMessage>()
             .With(m => m.Timestamp, new DateTime(2013, 01, 02, 07, 30, 0))
             .Create();
+        Http.When(HttpMethod.Get, $"http://holidayservice/holidays/{vehiclePassRequest.Timestamp.Year}").RespondWithJson(Array.Empty<Holiday>());
 
         await Publish(vehiclePassRequest);
 
@@ -41,6 +43,7 @@ public class TollTests : IntegrationTest
     [Fact]
     public async Task GetTollRequest_PassesOnDifferentDays_CorrectTollPerDay()
     {
+        Http.When(HttpMethod.Get, $"http://holidayservice/holidays/2013").RespondWithJson(Array.Empty<Holiday>());
         var vehicleId = Guid.NewGuid();
         var vehiclePassRequest1 = Fixture.Build<VehiclePassRegistrationMessage>()
             .With(m => m.VehicleId, vehicleId)
@@ -78,7 +81,7 @@ public class TollTests : IntegrationTest
     {
         var request = Fixture.Create<GetTollRequest>();
 
-        Http.When(HttpMethod.Get, "http://vehicleservice/vehicle")
+        Http.When(HttpMethod.Get, $"http://vehicleservice/vehicle/{request.VehicleId}")
             .RespondWithJson(TollableVehicle());
 
         var response = await BusTestHarness.GetRequestClient<GetTollRequest>()
