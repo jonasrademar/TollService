@@ -4,7 +4,6 @@ using TollService.Domain.Models;
 
 namespace TollService.Infrastructure.Database.Mappings;
 
-
 public class VehiclePassMap : IEntityTypeConfiguration<VehiclePass>
 {
     public void Configure(EntityTypeBuilder<VehiclePass> builder)

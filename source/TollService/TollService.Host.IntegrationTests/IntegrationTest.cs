@@ -1,4 +1,4 @@
-﻿using AutoFixture;
+using AutoFixture;
 using MassTransit;
 using MassTransit.Testing;
 using Microsoft.AspNetCore.Hosting;
@@ -11,7 +11,7 @@ using TollService.Host.Consumers;
 
 namespace TollService.Host.IntegrationTests;
 
-public class IntegrationTest : WebApplicationFactory<Program>
+public class IntegrationTest :  WebApplicationFactory<Program>
 {
     protected CancellationToken CancellationToken => TestContext.Current.CancellationToken;
     protected MockHttpMessageHandler Http { get; } = new(BackendDefinitionBehavior.Always);

@@ -18,6 +18,8 @@ builder.Services.Configure<TollSettings>(builder.Configuration.GetSection("TollS
 
 builder.Services.AddTransient<ITollCalculator, TollCalculator>();
 builder.Services.AddTransient<IVehiclePassRepository, VehiclePassRepository>();
+builder.Services.AddTransient<IIntervalConfigurationRepository, IntervalConfigurationRepository>();
+
 builder.Services.AddTransient<IIVehicleProvider, VehicleProvider>();
 builder.Services.AddSingleton<IHolidayProvider, HolidayProvider>();
 

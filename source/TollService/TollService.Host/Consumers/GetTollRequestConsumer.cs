@@ -1,4 +1,4 @@
-﻿using MassTransit;
+using MassTransit;
 using TollService.Domain;
 using TollService.Messages;
 
@@ -10,9 +10,16 @@ public class GetTollRequestConsumer(
 {
     public async Task Consume(ConsumeContext<GetTollRequest> context)
     {
-        var vehicle = await vehicleProvider.GetVehicle(context.Message.VehicleId);
-        var toll = await tollCalculator.GetTollFeeAsync(vehicle, context.Message.Date);
+        try
+        {
+            var vehicle = await vehicleProvider.GetVehicle(context.Message.VehicleId);
+            var toll = await tollCalculator.GetTollFeeAsync(vehicle, context.Message.Date);
+            await context.RespondAsync(new GetTollResponse(toll));
+        }
+        catch (Exception e)
+        {
+            await context.RespondAsync(new GetTollResponseError(e));
+        }
 
-        await context.RespondAsync(new GetTollResponse(toll));
     }
 }

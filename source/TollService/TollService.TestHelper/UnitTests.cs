@@ -9,5 +9,6 @@ public abstract class UnitTests
     protected UnitTests()
     {
         Fixture.Register(() => TimeOnly.FromDateTime(Fixture.Create<DateTime>()));
+        Fixture.Register(() => DateOnly.FromDateTime(Fixture.Create<DateTime>()));
     }
 }

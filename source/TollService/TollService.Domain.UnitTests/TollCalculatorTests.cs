@@ -1,8 +1,7 @@
 ﻿using AutoFixture;
-using Shouldly;
-using System.Globalization;
 using Microsoft.Extensions.Options;
 using Moq;
+using Shouldly;
 using TollService.Domain.Models;
 using TollService.Domain.Settings;
 
@@ -23,60 +22,78 @@ public class TollCalculatorTests : TestHelper.UnitTests
 
     public TollCalculatorTests()
     {
-        // Så inte något intervall i sig själv överstiger dagstaket
+        // Så att inte något intervall i sig själv överstiger dagstaket
         Fixture.Customize<TollInterval>(c => c.With(i => i.Fee, () => 5 + Fixture.Create<int>() % 20));
     }
 
-    [Theory, 
-     InlineData(8, "2013-01-02 06:00"), 
-     InlineData(13, "2013-01-02 06:45"), 
-     InlineData(18, "2013-01-02 07:30")]
-    public async Task GetTollFee_TollableVehicle_SinglePass_ReturnsExpectedToll(int expectedToll, DateTime dateTime)
+    [Fact]
+    public async Task GetTollFee_TollableVehicle_SinglePassNonHoliday_ReturnsExpectedToll()
     {
-        var result = await subject.GetTollFee(dateTime, TollableVehicle());
+        var intervalConfiguration = Fixture.Create<IntervalConfiguration>();
+        var vehicle = TollableVehicle();
+        var (dateTime, expectedToll) = TollableDateTimeFromIntervalConfiguration(intervalConfiguration);
+
+        var vehiclePass = Fixture.Build<VehiclePass>()
+            .With(p => p.Timestamp, dateTime)
+            .Create();
+
+        IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
+        HolidayProvider.Setup(p => p.GetHolidays(It.IsAny<int>())).ReturnsAsync([
+            DateOnly.FromDateTime(dateTime.AddDays(1)),
+            DateOnly.FromDateTime(dateTime.AddDays(-1))
+        ]);
+        VehiclePassRepository.Setup(r => r.GetPasses(vehicle.VehicleId, DateOnly.FromDateTime(dateTime)))
+            .ReturnsAsync([vehiclePass]);
+
+        var result = await subject.GetTollFeeAsync(vehicle, DateOnly.FromDateTime(dateTime));
+
         result.ShouldBe(expectedToll);
     }
 
-    // Nedan tester blandat röda pga bugg; long diffInMillies = date.Millisecond - intervalStart.Millisecond avser inte göra vad man tror det gör.
-    [Theory,
-     InlineData(18, new[] { "2013-01-02 06:15", "2013-01-02 07:00" }),
-     InlineData(21, new[] { "2013-01-02 06:15", "2013-01-03 07:00" }),
-     InlineData(21, new[] { "2013-01-02 06:00", "2013-01-02 07:30" }),
-     InlineData(36, new[] { "2013-01-02 07:30", "2013-01-02 16:30" }),
-     InlineData(39, new[] { "2013-01-02 06:00", "2013-01-02 07:15", "2013-01-02 08:20" }),
-     InlineData(60, new[] { "2013-01-02 06:35", "2013-01-02 07:40", "2013-01-02 15:10", "2013-01-02 16:15" })]
-    public async Task GetTollFee_TollableVehicle_MultiplePasses_ReturnsExpectedToll(int expectedToll, string[] dateTimes)
+    [Fact]
+    public async Task GetTollFee_TollableVehicle_MultiplePasses_ReturnsExpectedToll()
     {
-        var parsedDates = dateTimes
-            .Select(s => DateTime.ParseExact(s, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture))
-            .ToList();
+        var date = TollableDayOfTheWeek();
+        var vehicle = TollableVehicle();
+        var intervalConfiguration = Fixture.Build<IntervalConfiguration>()
+            .With(c => c.Intervals, [
+                    Fixture.Build<TollInterval>().With(i => i.Fee, 10).With(i => i.StartTime, new TimeOnly(10, 00)).Create(),
+                    Fixture.Build<TollInterval>().With(i => i.Fee, 12).With(i => i.StartTime, new TimeOnly(12, 00)).Create(),
+                    Fixture.Build<TollInterval>().With(i => i.Fee, 13).With(i => i.StartTime, new TimeOnly(14, 00)).Create(),
+                    Fixture.Build<TollInterval>().With(i => i.Fee, 14).With(i => i.StartTime, new TimeOnly(16, 00)).Create()
+                ])
+            .Create();
 
-        var result = await subject.GetTollFee(TollableVehicle(), parsedDates);
-        result.ShouldBe(expectedToll);
+        var vehiclePasses = intervalConfiguration.Intervals.Select(i => Fixture.Build<VehiclePass>()
+            .With(p => p.Timestamp, date.ToDateTime(i.StartTime))
+            .Create()); 
+        
+        IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
+        HolidayProvider.Setup(p => p.GetHolidays(It.IsAny<int>())).ReturnsAsync([]);
+        VehiclePassRepository.Setup(r => r.GetPasses(vehicle.VehicleId, date))
+            .ReturnsAsync(vehiclePasses);
+
+
+        var result = await subject.GetTollFeeAsync(vehicle, date);
+        result.ShouldBe(49);
     }
 
     [Fact]
     public async Task GetTollFee_TollFreeVehicle_ReturnsZero()
     {
+        var vehicle = TollFreeVehicle();
         var intervalConfiguration = Fixture.Create<IntervalConfiguration>();
-        IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
-
         var (tollableDate, _) = TollableDateTimeFromIntervalConfiguration(intervalConfiguration);
 
-        var result = await subject.GetTollFee(TollFreeVehicle(), [tollableDate]);
-        result.ShouldBe(0);
-    }
-
-    [Fact]
-    public async Task GetTollFee_NullVehicle_Tollable()
-    {
-        var intervalConfiguration = Fixture.Create<IntervalConfiguration>();
         IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
+        HolidayProvider.Setup(p => p.GetHolidays(It.IsAny<int>())).ReturnsAsync([]);
+        VehiclePassRepository.Setup(r => r.GetPasses(vehicle.VehicleId, DateOnly.FromDateTime(tollableDate)))
+            .ReturnsAsync([Fixture.Build<VehiclePass>()
+                .With(p => p.Timestamp, tollableDate)
+                .Create()]);
 
-        var (tollableDate, expectedFee) = TollableDateTimeFromIntervalConfiguration(intervalConfiguration);
-
-        var result = await subject.GetTollFee(null!, [tollableDate]);
-        result.ShouldBe(expectedFee);
+        var result = await subject.GetTollFeeAsync(vehicle, DateOnly.FromDateTime(tollableDate));
+        result.ShouldBe(0);
     }
 
     [Fact]
@@ -90,7 +107,7 @@ public class TollCalculatorTests : TestHelper.UnitTests
         HolidayProvider.Setup(p => p.GetHolidays(dateWithTollableTimeSlot.Year))
             .ReturnsAsync([DateOnly.FromDateTime(dateWithTollableTimeSlot)]);
 
-        var result = await subject.GetTollFee(TollableVehicle(), [dateWithTollableTimeSlot]);
+        var result = await subject.GetTollFeeAsync(TollableVehicle(), DateOnly.FromDateTime(dateWithTollableTimeSlot));
         result.ShouldBe(0);
     }
 
@@ -108,10 +125,23 @@ public class TollCalculatorTests : TestHelper.UnitTests
 
     private (DateTime dateTime, int expectedFee) TollableDateTimeFromIntervalConfiguration(IntervalConfiguration intervalConfiguration)
     {
-        var dateTime = Fixture.Create<DateTime>().Date;
+        var date = TollableDayOfTheWeek();
         var randomInterval = intervalConfiguration.Intervals.OrderBy(_ => Guid.NewGuid()).First();
-        dateTime = dateTime.AddHours(randomInterval.StartTime.Hour).AddMinutes(randomInterval.StartTime.Minute);
+        var dateTime = new DateTime(date, randomInterval.StartTime);
         
         return (dateTime, randomInterval.Fee);
+    }
+
+    private DateOnly TollableDayOfTheWeek()
+    {
+        DateOnly date;
+        do
+        {
+            date = DateOnly.FromDateTime(Fixture.Create<DateTime>());
+        }
+        while (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday);
+
+        return date;
+
     }
 }

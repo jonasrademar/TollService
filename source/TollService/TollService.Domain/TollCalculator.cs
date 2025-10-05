@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Concurrent;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using Microsoft.Extensions.Options;
 using TollService.Domain.Models;
 using TollService.Domain.Settings;
@@ -16,80 +18,60 @@ public class TollCalculator(
     IIntervalConfigurationRepository intervalConfigurationRepository,
     IVehiclePassRepository vehiclePassRepository) : ITollCalculator
 {
-    /**
- * Calculate the total toll fee for one day
- *
- * @param vehicle - the vehicle
- * @param date    - the date to calculate toll for
- * @return - the total toll fee for that day
- */
-    private IntervalConfiguration IntervalConfiguration { get; set; } = null!;
-
     private int DailyCap => tollSettings.Value.DailyCap;
 
     public async Task<int> GetTollFeeAsync(Vehicle vehicle, DateOnly date)
     {
-        if (!vehicle.Tollable)
+        if (!vehicle.Tollable || await IsTollFreeDate(date))
             return 0;
 
         var vehiclePasses = await vehiclePassRepository.GetPasses(vehicle.VehicleId, date);
-        var dates = vehiclePasses.Select(p => p.Timestamp).ToImmutableList();
         
-        return await GetTollFee(vehicle, dates);
+        return await GetDailyTollFee(vehiclePasses.ToImmutableList());
     }
 
-    public async Task<int> GetTollFee(Vehicle vehicle, IReadOnlyList<DateTime> dates)
+    private async Task<int> GetDailyTollFee(IReadOnlyList<VehiclePass> passes)
     {
-        // WIP flytta till rätt ställe vid refact
-        IntervalConfiguration = await intervalConfigurationRepository.GetLatestConfiguration();
-        DateTime intervalStart = dates[0];
-        int totalFee = 0;
-        foreach (DateTime date in dates)
+        var intervalConfiguration = await intervalConfigurationRepository.GetLatestConfiguration();
+        var totalFee = 0;
+
+        TimeOnly? intervalStart = null;
+        var tollForInterval = 0;
+
+        foreach (var pass in passes.OrderBy(p => p.Timestamp))
         {
-            int nextFee = await GetTollFee(date, vehicle);
-            int tempFee = await GetTollFee(intervalStart, vehicle);
-
-            long diffInMillies = date.Millisecond - intervalStart.Millisecond;
-            long minutes = diffInMillies/1000/60;
-
-            if (minutes <= DailyCap)
+            var timeForPass = new TimeOnly(pass.Timestamp.Hour, pass.Timestamp.Minute);
+            if (intervalStart == null || intervalStart.Value.AddHours(1) < timeForPass)
             {
-                if (totalFee > 0) totalFee -= tempFee;
-                if (nextFee >= tempFee) tempFee = nextFee;
-                totalFee += tempFee;
+                totalFee += tollForInterval;
+
+                intervalStart = timeForPass;
+                tollForInterval = 0;
             }
-            else
-            {
-                totalFee += nextFee;
-            }
+
+            var nextFee = GetTollFeeForDateTime(intervalConfiguration, pass.Timestamp);
+            tollForInterval = Math.Max(nextFee, tollForInterval);
+
+            if ((totalFee + tollForInterval) >= DailyCap) return DailyCap;
         }
-        if (totalFee > DailyCap) totalFee = DailyCap;
-        return totalFee;
+        return Math.Min(totalFee + tollForInterval, DailyCap);
     }
 
-    public async Task<int> GetTollFee(DateTime date, Vehicle vehicle)
+    private int GetTollFeeForDateTime(IntervalConfiguration intervalConfiguration, DateTime date)
     {
-        if (await IsTollFreeDate(date)) return 0;
-
-        var timeOfDay = TimeOnly.FromDateTime(date);
-        
-        return GetTollFeeForTime(timeOfDay);
-    }
-
-    private int GetTollFeeForTime(TimeOnly time)
-    {
-        var matchingInterval = IntervalConfiguration.Intervals
+        var matchingInterval = intervalConfiguration.Intervals
             .OrderBy(x => x.StartTime)
-            .LastOrDefault(x => time >= x.StartTime);
-            
+            .LastOrDefault(x => date.Hour >= x.StartTime.Hour &&
+                                date.Minute >= x.StartTime.Minute);
+
         return matchingInterval?.Fee ?? 0;
     }
 
-    private async Task<bool> IsTollFreeDate(DateTime date)
+    private async Task<bool> IsTollFreeDate(DateOnly date)
     {
-        if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) return true;
+        if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return true;
 
         var holidays = await holidayProvider.GetHolidays(date.Year);
-        return holidays.Contains(DateOnly.FromDateTime(date));
+        return holidays.Contains(date);
     }
 }
