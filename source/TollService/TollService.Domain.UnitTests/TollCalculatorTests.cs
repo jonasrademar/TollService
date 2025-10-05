@@ -9,9 +9,11 @@ namespace TollService.Domain.UnitTests;
 
 public class TollCalculatorTests : TestHelper.UnitTests
 {
-    private static readonly Mock<IHolidayProvider> HolidayProvider = new();
-    private static readonly Mock<IVehiclePassRepository> VehiclePassRepository = new();
-    private static readonly Mock<IIntervalConfigurationRepository> IntervalConfigurationRepository = new();
+    // Jag vill att testet skall ge rätt utfall av rätt anledningar. Särskilt här med testerna
+    // som förväntar sig 0, så vill jag vet att det inte är 0 för att jag glömt mocka något. Därav: strict.
+    private static readonly Mock<IHolidayProvider> HolidayProvider = new(MockBehavior.Strict);
+    private static readonly Mock<IVehiclePassRepository> VehiclePassRepository = new(MockBehavior.Strict);
+    private static readonly Mock<IIntervalConfigurationRepository> IntervalConfigurationRepository = new(MockBehavior.Strict);
     private static readonly TollSettings TollSettings = new() {DailyCap = 100};
 
     private readonly TollCalculator subject = new(
@@ -142,6 +144,5 @@ public class TollCalculatorTests : TestHelper.UnitTests
         while (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday);
 
         return date;
-
     }
 }

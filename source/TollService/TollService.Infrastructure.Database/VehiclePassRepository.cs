@@ -16,6 +16,7 @@ public class VehiclePassRepository(TollServiceDbContext dbContext) : IVehiclePas
     public async Task AddVehiclePass(Guid passId, Guid vehicleId, DateTime timestamp)
     {
         dbContext.VehiclePasses.Add(new VehiclePass(passId, vehicleId, timestamp));
+        // Bör inte ligga i repositoryt; utan som en uow middleware för consumern.
         await dbContext.SaveChangesAsync();
     }
 }

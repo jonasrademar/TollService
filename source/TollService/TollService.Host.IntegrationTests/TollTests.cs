@@ -11,6 +11,8 @@ using TollService.TestHelper;
 
 namespace TollService.Host.IntegrationTests;
 
+// Försökt ha någorlunda vettig testtäckning av systemet. Inom rimlighet; finns ingen 
+// anledning att ha 100% testcoverage; bara visa ungefär hur jag tänker när jag skriver dem.
 public class TollTests : IntegrationTest
 {
     public TollTests()

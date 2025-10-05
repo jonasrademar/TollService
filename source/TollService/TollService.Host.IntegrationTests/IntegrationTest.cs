@@ -1,4 +1,4 @@
-using AutoFixture;
+﻿using AutoFixture;
 using MassTransit;
 using MassTransit.Testing;
 using Microsoft.AspNetCore.Hosting;
@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Http;
 using RichardSzalay.MockHttp;
-using TollService.Host.Consumers;
 
 namespace TollService.Host.IntegrationTests;
 
@@ -30,6 +29,7 @@ public class IntegrationTest :  WebApplicationFactory<Program>
 
     protected async Task Publish<T>(T message) where T : class
     {
+        // Publish och sen invänta att meddelandet hanterats färdigt för att undvika timing problematik i testen.
         await BusTestHarness.Bus.Publish(message, CancellationToken);
         await BusTestHarness.Consumed.Any<T>(x => x.Context.Message == message, CancellationToken);
     }

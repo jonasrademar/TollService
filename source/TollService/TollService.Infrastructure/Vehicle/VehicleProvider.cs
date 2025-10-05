@@ -7,6 +7,7 @@ public class VehicleProvider(IVehicleServiceProxy proxy) : IIVehicleProvider
     {
         var vehicle = await proxy.GetVehicle(id);
 
+        // Motsvarar originalkodens IsTollFreeVehicle : "if (vehicle == null) return false;"
         return new Domain.Vehicle(id, vehicle?.IsTollable ?? true);
     }
 }

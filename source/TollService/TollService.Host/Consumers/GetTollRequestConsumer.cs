@@ -1,9 +1,11 @@
-using MassTransit;
+﻿using MassTransit;
 using TollService.Domain;
 using TollService.Messages;
 
 namespace TollService.Host.Consumers;
 
+// TollService & TollCalculator känns som interna tjänster, så att exponera svaret via en 
+// intern bus funkar bra.
 public class GetTollRequestConsumer(
     ITollCalculator tollCalculator, 
     IIVehicleProvider vehicleProvider) : IConsumer<GetTollRequest>

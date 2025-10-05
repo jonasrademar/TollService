@@ -15,6 +15,7 @@ public class HolidayProvider(IHolidayServiceProxy proxy, IMemoryCache memoryCach
     {
         var cacheKey = $"holidays_{year}";
         
+        // Potentiellt väldigt många anrop mot samma endpoint för samma data, så en kort cache
         if (memoryCache.TryGetValue(cacheKey, out IEnumerable<DateOnly>? cachedHolidays))
         {
             return cachedHolidays!;

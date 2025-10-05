@@ -7,6 +7,12 @@ using TollService.Infrastructure.Database;
 using TollService.Infrastructure.Holiday;
 using TollService.Infrastructure.Vehicle;
 
+/*  Första frågan var vilken domän vi är i. Fokus i applikationen är "TollCalculator", vilken
+ * känns som den hör hemma i en TollService. Sen försökt arbeta med separation of concerns för
+ * att hålla TollService så relevant till vad man skulle kunna förvänta sig i en TollService,
+ * relaterat till sagd TollCalculator.
+ */
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<TollServiceDbContext>(ctx => 
@@ -29,7 +35,6 @@ builder.Services.AddHttpClient<IHolidayServiceProxy, HolidayServiceProxy>(client
     client.BaseAddress = new Uri(builder.Configuration.GetConnectionString("HolidayService")!));
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddMassTransit(x =>
@@ -49,7 +54,6 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
