@@ -1,7 +1,10 @@
 ﻿using AutoFixture;
 using Shouldly;
 using System.Globalization;
+using Microsoft.Extensions.Options;
 using Moq;
+using TollService.Domain.Models;
+using TollService.Domain.Settings;
 
 namespace TollService.Domain.UnitTests;
 
@@ -9,7 +12,20 @@ public class TollCalculatorTests : TestHelper.UnitTests
 {
     private static readonly Mock<IHolidayProvider> HolidayProvider = new();
     private static readonly Mock<IVehiclePassRepository> VehiclePassRepository = new();
-    private readonly TollCalculator subject = new(HolidayProvider.Object, VehiclePassRepository.Object);
+    private static readonly Mock<IIntervalConfigurationRepository> IntervalConfigurationRepository = new();
+    private static readonly TollSettings TollSettings = new() {DailyCap = 100};
+
+    private readonly TollCalculator subject = new(
+        Options.Create(TollSettings),
+        HolidayProvider.Object, 
+        IntervalConfigurationRepository.Object, 
+        VehiclePassRepository.Object);
+
+    public TollCalculatorTests()
+    {
+        // Så inte något intervall i sig själv överstiger dagstaket
+        Fixture.Customize<TollInterval>(c => c.With(i => i.Fee, () => 5 + Fixture.Create<int>() % 20));
+    }
 
     [Theory, 
      InlineData(8, "2013-01-02 06:00"), 
@@ -42,7 +58,10 @@ public class TollCalculatorTests : TestHelper.UnitTests
     [Fact]
     public async Task GetTollFee_TollFreeVehicle_ReturnsZero()
     {
-        var tollableDate = TollableDateTime();
+        var intervalConfiguration = Fixture.Create<IntervalConfiguration>();
+        IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
+
+        var (tollableDate, _) = TollableDateTimeFromIntervalConfiguration(intervalConfiguration);
 
         var result = await subject.GetTollFee(TollFreeVehicle(), [tollableDate]);
         result.ShouldBe(0);
@@ -51,16 +70,22 @@ public class TollCalculatorTests : TestHelper.UnitTests
     [Fact]
     public async Task GetTollFee_NullVehicle_Tollable()
     {
-        var tollableDate = TollableDateTime();
+        var intervalConfiguration = Fixture.Create<IntervalConfiguration>();
+        IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
+
+        var (tollableDate, expectedFee) = TollableDateTimeFromIntervalConfiguration(intervalConfiguration);
 
         var result = await subject.GetTollFee(null!, [tollableDate]);
-        result.ShouldBeGreaterThan(0);
+        result.ShouldBe(expectedFee);
     }
 
     [Fact]
     public async Task GetTollFee_Holiday_ReturnsZero()
     {
-        var dateWithTollableTimeSlot = TollableDateTime();
+        var intervalConfiguration = Fixture.Create<IntervalConfiguration>();
+        IntervalConfigurationRepository.Setup(r => r.GetLatestConfiguration()).ReturnsAsync(intervalConfiguration);
+
+        var (dateWithTollableTimeSlot, _) = TollableDateTimeFromIntervalConfiguration(intervalConfiguration);
 
         HolidayProvider.Setup(p => p.GetHolidays(dateWithTollableTimeSlot.Year))
             .ReturnsAsync([DateOnly.FromDateTime(dateWithTollableTimeSlot)]);
@@ -81,11 +106,12 @@ public class TollCalculatorTests : TestHelper.UnitTests
             .With(v => v.Tollable, false)
             .Create();
 
-    private DateTime TollableDateTime()
+    private (DateTime dateTime, int expectedFee) TollableDateTimeFromIntervalConfiguration(IntervalConfiguration intervalConfiguration)
     {
-        var tollableDateTime = Fixture.Create<DateTime>().Date;
-        tollableDateTime = tollableDateTime.AddHours(6 + (Fixture.Create<int>() % 12));
-
-        return tollableDateTime;
+        var dateTime = Fixture.Create<DateTime>().Date;
+        var randomInterval = intervalConfiguration.Intervals.OrderBy(_ => Guid.NewGuid()).First();
+        dateTime = dateTime.AddHours(randomInterval.StartTime.Hour).AddMinutes(randomInterval.StartTime.Minute);
+        
+        return (dateTime, randomInterval.Fee);
     }
 }

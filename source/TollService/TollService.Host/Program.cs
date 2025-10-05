@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using TollService.Domain;
+using TollService.Domain.Settings;
 using TollService.Host.Consumers;
 using TollService.Infrastructure.Database;
 using TollService.Infrastructure.Holiday;
@@ -12,6 +13,8 @@ builder.Services.AddDbContext<TollServiceDbContext>(ctx =>
     ctx.UseInMemoryDatabase($"tollservice_{Guid.NewGuid().ToByteArray()}"));
 
 builder.Services.AddMemoryCache();
+
+builder.Services.Configure<TollSettings>(builder.Configuration.GetSection("TollSettings"));
 
 builder.Services.AddTransient<ITollCalculator, TollCalculator>();
 builder.Services.AddTransient<IVehiclePassRepository, VehiclePassRepository>();

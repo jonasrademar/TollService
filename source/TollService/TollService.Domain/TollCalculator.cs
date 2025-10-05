@@ -1,5 +1,7 @@
 ﻿using System.Collections.Immutable;
+using Microsoft.Extensions.Options;
 using TollService.Domain.Models;
+using TollService.Domain.Settings;
 
 namespace TollService.Domain;
 
@@ -9,6 +11,7 @@ public interface ITollCalculator
 }
 
 public class TollCalculator(
+    IOptions<TollSettings> tollSettings,
     IHolidayProvider holidayProvider,
     IIntervalConfigurationRepository intervalConfigurationRepository,
     IVehiclePassRepository vehiclePassRepository) : ITollCalculator
@@ -21,6 +24,9 @@ public class TollCalculator(
  * @return - the total toll fee for that day
  */
     private IntervalConfiguration IntervalConfiguration { get; set; } = null!;
+
+    private int DailyCap => tollSettings.Value.DailyCap;
+
     public async Task<int> GetTollFeeAsync(Vehicle vehicle, DateOnly date)
     {
         if (!vehicle.Tollable)
@@ -46,7 +52,7 @@ public class TollCalculator(
             long diffInMillies = date.Millisecond - intervalStart.Millisecond;
             long minutes = diffInMillies/1000/60;
 
-            if (minutes <= 60)
+            if (minutes <= DailyCap)
             {
                 if (totalFee > 0) totalFee -= tempFee;
                 if (nextFee >= tempFee) tempFee = nextFee;
@@ -57,7 +63,7 @@ public class TollCalculator(
                 totalFee += nextFee;
             }
         }
-        if (totalFee > 60) totalFee = 60;
+        if (totalFee > DailyCap) totalFee = DailyCap;
         return totalFee;
     }
 
