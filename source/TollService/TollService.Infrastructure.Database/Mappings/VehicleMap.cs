@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using TollService.Domain;
+using TollService.Domain.Models;
 
 namespace TollService.Infrastructure.Database.Mappings;
 

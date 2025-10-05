@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TollService.Domain;
+using TollService.Domain.Models;
 
 namespace TollService.Infrastructure.Database;
 

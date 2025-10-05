@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using TollService.Domain.Models;
 
 namespace TollService.Domain;
 
@@ -9,6 +10,7 @@ public interface ITollCalculator
 
 public class TollCalculator(
     IHolidayProvider holidayProvider,
+    IIntervalConfigurationRepository intervalConfigurationRepository,
     IVehiclePassRepository vehiclePassRepository) : ITollCalculator
 {
     /**
@@ -18,7 +20,7 @@ public class TollCalculator(
  * @param date    - the date to calculate toll for
  * @return - the total toll fee for that day
  */
-
+    private IntervalConfiguration IntervalConfiguration { get; set; } = null!;
     public async Task<int> GetTollFeeAsync(Vehicle vehicle, DateOnly date)
     {
         if (!vehicle.Tollable)
@@ -32,6 +34,8 @@ public class TollCalculator(
 
     public async Task<int> GetTollFee(Vehicle vehicle, IReadOnlyList<DateTime> dates)
     {
+        // WIP flytta till rätt ställe vid refact
+        IntervalConfiguration = await intervalConfigurationRepository.GetLatestConfiguration();
         DateTime intervalStart = dates[0];
         int totalFee = 0;
         foreach (DateTime date in dates)
@@ -66,31 +70,14 @@ public class TollCalculator(
         return GetTollFeeForTime(timeOfDay);
     }
 
-    private static int GetTollFeeForTime(TimeOnly time)
+    private int GetTollFeeForTime(TimeOnly time)
     {
-        // Det här borde egentligen också ligga i en service och gå att underhålla, snarare än hårdkodat.
-        var tollIntervals = new[]
-        {
-            new TollInterval(new TimeOnly(06, 00), 8),
-            new TollInterval(new TimeOnly(06, 30), 13),
-            new TollInterval(new TimeOnly(07, 00), 18),
-            new TollInterval(new TimeOnly(08, 00), 13),
-            new TollInterval(new TimeOnly(08, 30), 8),
-            new TollInterval(new TimeOnly(15, 00), 13),
-            new TollInterval(new TimeOnly(15, 30), 18),
-            new TollInterval(new TimeOnly(17, 00), 13),
-            new TollInterval(new TimeOnly(18, 00), 8),
-            new TollInterval(new TimeOnly(18, 30), 0)
-        };
-
-        var matchingInterval = tollIntervals
+        var matchingInterval = IntervalConfiguration.Intervals
             .OrderBy(x => x.StartTime)
             .LastOrDefault(x => time >= x.StartTime);
             
         return matchingInterval?.Fee ?? 0;
     }
-
-    private record TollInterval(TimeOnly StartTime, int Fee);
 
     private async Task<bool> IsTollFreeDate(DateTime date)
     {
